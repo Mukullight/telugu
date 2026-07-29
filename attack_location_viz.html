@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Superposition &mdash; Where You Attack Matters</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<style>
+  :root{
+    --ink:#0e1418;
+    --panel:#161f25;
+    --panel-2:#1c272e;
+    --line:#2b3841;
+    --bone:#eae7df;
+    --muted:#8fa0a8;
+    --teal:#57c7ba;
+    --amber:#e3a94a;
+    --input-red:#e8544f;
+    --bottleneck-violet:#8f7fe8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1100px 500px at 15% -10%, rgba(232,84,79,0.07), transparent 60%),
+      radial-gradient(900px 500px at 90% 5%, rgba(143,127,232,0.07), transparent 55%),
+      var(--ink);
+    color:var(--bone);
+    font-family:'IBM Plex Sans', sans-serif;
+    line-height:1.55;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:56px 28px 100px;}
+  header.masthead{margin-bottom:40px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);
+    margin:0 0 14px;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:clamp(28px,4vw,42px);
+    line-height:1.1;
+    margin:0 0 18px;
+    letter-spacing:-0.01em;
+  }
+  header.masthead p{ color:var(--muted); max-width:740px; font-size:15.5px; margin:0 0 10px; }
+  .note{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;color:var(--muted);
+    border-left:2px solid var(--line); padding-left:12px;
+  }
+  section.card{
+    background:linear-gradient(180deg, var(--panel), var(--panel-2));
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:34px 34px 30px;
+    margin-bottom:30px;
+    position:relative; overflow:hidden;
+  }
+  section.card::before{
+    content:"";
+    position:absolute;top:0;left:0;right:0;height:3px;
+    background:linear-gradient(90deg, var(--input-red), var(--bottleneck-violet) 60%, transparent 95%);
+  }
+  .eyebrow-num{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;color:var(--muted);letter-spacing:.12em;
+    display:flex;align-items:center;gap:10px;margin-bottom:8px;
+  }
+  .eyebrow-num .num{color:var(--amber);}
+  h2{ font-family:'Space Grotesk', sans-serif; font-size:23px;font-weight:600;margin:0 0 12px;letter-spacing:-0.005em; }
+  .desc{color:var(--muted);font-size:14.5px;max-width:840px;margin:0 0 20px;}
+  .controls{
+    display:flex;flex-wrap:wrap;gap:24px 32px;
+    background:rgba(0,0,0,0.2);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:18px 22px;
+  }
+  .control{display:flex;flex-direction:column;gap:6px;min-width:210px;flex:1;}
+  .control label{
+    font-size:12.5px;color:var(--bone);display:flex;justify-content:space-between;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .control label .val{color:var(--teal);}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:4px;border-radius:2px;
+    background:var(--line);outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:16px;height:16px;border-radius:50%;
+    background:var(--teal);border:2px solid #0e1418;
+    box-shadow:0 0 0 2px var(--teal); cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;
+    background:var(--teal);border:2px solid #0e1418;
+    box-shadow:0 0 0 2px var(--teal);cursor:pointer;
+  }
+  .stat-row{ display:flex; flex-wrap:wrap; gap:14px; margin:22px 0 6px; }
+  .stat-tile{
+    flex:1 1 210px;
+    background:rgba(0,0,0,0.22);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+  }
+  .stat-tile .stat-label{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--muted);
+    text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px;
+  }
+  .stat-tile .stat-value{ font-family:'Space Grotesk', sans-serif; font-size:22px; font-weight:600; }
+  .stat-tile.input-flavor .stat-value{ color:var(--input-red); }
+  .stat-tile.bottleneck-flavor .stat-value{ color:var(--bottleneck-violet); }
+  .plot-full{width:100%;height:440px;}
+  .plot-row{display:flex;flex-wrap:wrap;gap:20px;}
+  .plot-half{flex:1 1 420px;min-width:0;height:420px;}
+  .legend-note{ font-size:12.5px;color:var(--muted);margin-top:14px; font-family:'IBM Plex Mono', monospace; }
+  .legend-swatch{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;}
+  footer{ text-align:center;color:var(--muted);font-size:12px; font-family:'IBM Plex Mono', monospace; margin-top:36px; }
+  @media (max-width:720px){ section.card{padding:24px 18px;} .wrap{padding:36px 16px 80px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Toy Models of Superposition &middot; attack-location companion</p>
+    <h1>Where you attack matters as much as how hard</h1>
+    <p>The same toy autoencoder — encode <em>n</em> sparse features into <em>m</em> hidden
+    dimensions, then decode back out — can be attacked in two different places for the same
+    L2 budget: at the <strong style="color:var(--input-red)">input</strong>, before anything
+    has been compressed, or at the <strong style="color:var(--bottleneck-violet)">bottleneck</strong>,
+    on the already-compressed hidden state, right before decoding. Superposition changes how
+    much damage each of those buys an attacker, and by how much it leaks onto features the
+    attacker never touched.</p>
+    <p class="note">Features are abstract synthetic directions (Feature 0 … Feature 7) — there's
+    no claim any of them correspond to a human-interpretable concept, in keeping with the toy
+    model's own setup.</p>
+  </header>
+
+  <!-- ============ SHARED CONTROLS ============ -->
+  <section class="card" id="control-section">
+    <div class="eyebrow-num"><span class="num">•</span><span>Shared controls</span></div>
+    <h2>Set the scenario</h2>
+    <p class="desc">These four dials drive every plot below: which feature gets attacked, how
+    sparse the data (and therefore how packed the superposition), how far along training is,
+    and how large an L2 perturbation the attacker is allowed.</p>
+    <div class="controls">
+      <div class="control">
+        <label>Target feature <span class="val" id="featureVal">Feature 0</span></label>
+        <input type="range" id="featureSlider" min="0" max="7" value="0" step="1">
+      </div>
+      <div class="control">
+        <label>Sparsity / superposition <span class="val" id="sparsityVal">0.50</span></label>
+        <input type="range" id="sparsitySlider" min="0" max="100" value="50" step="1">
+      </div>
+      <div class="control">
+        <label>Training stage (loss) <span class="val" id="trainVal">0.70</span></label>
+        <input type="range" id="trainSlider" min="0" max="100" value="70" step="1">
+      </div>
+      <div class="control">
+        <label>Attack budget (‖&delta;‖&#8322; as % of input norm) <span class="val" id="budgetVal">30</span></label>
+        <input type="range" id="budgetSlider" min="0" max="100" value="30" step="1">
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION A: reconstruction snapshot ============ -->
+  <section class="card" id="section-a">
+    <div class="eyebrow-num"><span class="num">01</span><span>What the attack actually does</span></div>
+    <h2>Reconstructed activations, before and after</h2>
+    <p class="desc">
+      The clean bar is the model's normal reconstruction with only the target feature active.
+      The other two bars show the reconstruction after an optimal L2-bounded attack injected at
+      the input versus at the bottleneck. Any movement on a feature other than the target one is
+      collateral damage &mdash; the interference terms in the end-to-end weights that superposition
+      introduces.
+    </p>
+    <div class="plot-full" id="reconPlot"></div>
+    <div class="stat-row">
+      <div class="stat-tile input-flavor">
+        <div class="stat-label">Target Δ &middot; attack @ input</div>
+        <div class="stat-value" id="statTargetInput">&mdash;</div>
+      </div>
+      <div class="stat-tile bottleneck-flavor">
+        <div class="stat-label">Target Δ &middot; attack @ bottleneck</div>
+        <div class="stat-value" id="statTargetBottleneck">&mdash;</div>
+      </div>
+      <div class="stat-tile input-flavor">
+        <div class="stat-label">Collateral &middot; attack @ input</div>
+        <div class="stat-value" id="statCollInput">&mdash;</div>
+      </div>
+      <div class="stat-tile bottleneck-flavor">
+        <div class="stat-label">Collateral &middot; attack @ bottleneck</div>
+        <div class="stat-value" id="statCollBottleneck">&mdash;</div>
+      </div>
+    </div>
+    <div class="legend-note">
+      <span class="legend-swatch" style="background:#8fa0a8;"></span>clean
+      &nbsp;&nbsp;<span class="legend-swatch" style="background:#e8544f;"></span>attack @ input
+      &nbsp;&nbsp;<span class="legend-swatch" style="background:#8f7fe8;"></span>attack @ bottleneck
+      &nbsp;&nbsp;&mdash;&nbsp;collateral = summed absolute change over every non-target feature.
+    </div>
+  </section>
+
+  <!-- ============ SECTION B: sparsity sweep ============ -->
+  <section class="card" id="section-b">
+    <div class="eyebrow-num"><span class="num">02</span><span>Effect of sparsity</span></div>
+    <h2>Does the gap between attack points widen with more superposition?</h2>
+    <p class="desc">
+      Holding the feature, training stage, and budget fixed at their current values, this sweeps
+      sparsity from dense (few features share each dimension) to highly sparse (many features
+      packed in). The marker shows where the current sparsity slider sits.
+    </p>
+    <div class="plot-full" id="sparsitySweepPlot"></div>
+  </section>
+
+  <!-- ============ SECTION C: training sweep ============ -->
+  <section class="card" id="section-c">
+    <div class="eyebrow-num"><span class="num">03</span><span>Effect of training stage</span></div>
+    <h2>Does vulnerability emerge as loss goes down?</h2>
+    <p class="desc">
+      Same idea, but sweeping training progress instead of sparsity, holding sparsity at its
+      current slider value. A synthetic loss curve is overlaid on the right axis purely as a
+      reference for "how far along training is" &mdash; low loss means the superposition
+      geometry has mostly settled.
+    </p>
+    <div class="plot-full" id="trainSweepPlot"></div>
+  </section>
+
+  <footer>Synthetic illustrative data &middot; built with Plotly.js</footer>
+</div>
+
+<script>
+/* ============================================================
+   MODEL: n features -> m hidden dims -> n reconstruction
+   A is n x m (row i = feature i's weights across hidden neurons)
+   encode: h = A^T x       decode: x_hat = ReLU(A h)
+   end-to-end (pre-activation): M = A A^T  (n x n)
+   ============================================================ */
+const N_FEATURES = 8;
+const M_NEURONS = 5;
+
+function smoothstep(u){ return u*u*(3-2*u); }
+function lerp(a,b,u){ return a + (b-a)*u; }
+
+// Fully-converged matrix at a given sparsity t in [0,1]. 0 = dense/no superposition
+// (only M_NEURONS features get a clean slot, extras suppressed), 1 = fully packed
+// superposition (all features represented, with mixed-sign interference).
+function buildWFinal(t){
+  const W = [];
+  for(let i=0;i<N_FEATURES;i++){
+    const row = new Array(M_NEURONS).fill(0);
+    const primary = i % M_NEURONS;
+    const isExtra = i >= M_NEURONS;
+    const baseWeight = isExtra ? (0.12 + 0.78*t) : (0.95 - 0.10*t);
+    row[primary] = baseWeight;
+    const interferenceMag = 0.28*t;
+    for(let k=1;k<=2;k++){
+      const j = (primary + k) % M_NEURONS;
+      const sign = ((i+k) % 2 === 0) ? 1 : -1;
+      row[j] += sign * interferenceMag * (1 - (k-1)*0.35);
+    }
+    W.push(row);
+  }
+  return W;
+}
+
+// Small, mostly unstructured matrix standing in for "before training".
+function buildWEarly(){
+  const W = [];
+  for(let i=0;i<N_FEATURES;i++){
+    const row = [];
+    for(let j=0;j<M_NEURONS;j++){
+      row.push(0.05 * Math.sin(i*3.1 + j*1.7));
+    }
+    W.push(row);
+  }
+  return W;
+}
+
+function getA(trainPct, sparsityPct){
+  const early = buildWEarly();
+  const final = buildWFinal(sparsityPct/100);
+  const u = smoothstep(trainPct/100);
+  const A = [];
+  for(let i=0;i<N_FEATURES;i++){
+    const row = [];
+    for(let j=0;j<M_NEURONS;j++) row.push(lerp(early[i][j], final[i][j], u));
+    A.push(row);
+  }
+  return A;
+}
+
+function encode(A, x){ // h_j = sum_i A[i][j] x_i
+  const h = new Array(M_NEURONS).fill(0);
+  for(let j=0;j<M_NEURONS;j++){
+    let s=0;
+    for(let i=0;i<N_FEATURES;i++) s += A[i][j]*x[i];
+    h[j] = s;
+  }
+  return h;
+}
+function decode(A, h){ // out_i = sum_j A[i][j] h_j
+  const out = new Array(N_FEATURES).fill(0);
+  for(let i=0;i<N_FEATURES;i++){
+    let s=0;
+    for(let j=0;j<M_NEURONS;j++) s += A[i][j]*h[j];
+    out[i] = s;
+  }
+  return out;
+}
+function relu(v){ return v.map(x=>Math.max(0,x)); }
+function vnorm(v){ return Math.sqrt(v.reduce((a,b)=>a+b*b,0)); }
+function computeM(A){ // M[i][k] = sum_j A[i][j] A[k][j]
+  const M = [];
+  for(let i=0;i<N_FEATURES;i++){
+    const row = [];
+    for(let k=0;k<N_FEATURES;k++){
+      let s=0;
+      for(let j=0;j<M_NEURONS;j++) s += A[i][j]*A[k][j];
+      row.push(s);
+    }
+    M.push(row);
+  }
+  return M;
+}
+
+function runAttackScenario(trainPct, sparsityPct, targetIdx, budgetPct){
+  const A = getA(trainPct, sparsityPct);
+  const M = computeM(A);
+  const eps = budgetPct/100; // fraction of the clean input's L2 norm (=1, one-hot input)
+
+  const xClean = new Array(N_FEATURES).fill(0);
+  xClean[targetIdx] = 1;
+  const hClean = encode(A, xClean);
+  const xHatClean = relu(decode(A, hClean));
+
+  // Attack @ input: optimal direction to move pre-activation of targetIdx is row targetIdx of M
+  const mRow = M[targetIdx];
+  const mRowNorm = vnorm(mRow) || 1e-9;
+  const deltaX = mRow.map(v => eps * v / mRowNorm);
+  const xAtk = xClean.map((v,i)=> v + deltaX[i]);
+  const hAtkInput = encode(A, xAtk);
+  const xHatAtkInput = relu(decode(A, hAtkInput));
+
+  // Attack @ bottleneck: optimal direction is row targetIdx of A itself (feature's own encoding row)
+  const aRow = A[targetIdx];
+  const aRowNorm = vnorm(aRow) || 1e-9;
+  const deltaH = aRow.map(v => eps * v / aRowNorm);
+  const hAtkBottleneck = hClean.map((v,j)=> v + deltaH[j]);
+  const xHatAtkBottleneck = relu(decode(A, hAtkBottleneck));
+
+  let collInput = 0, collBottleneck = 0;
+  for(let i=0;i<N_FEATURES;i++){
+    if(i === targetIdx) continue;
+    collInput += Math.abs(xHatAtkInput[i] - xHatClean[i]);
+    collBottleneck += Math.abs(xHatAtkBottleneck[i] - xHatClean[i]);
+  }
+
+  return {
+    xHatClean, xHatAtkInput, xHatAtkBottleneck,
+    targetDeltaInput: xHatAtkInput[targetIdx] - xHatClean[targetIdx],
+    targetDeltaBottleneck: xHatAtkBottleneck[targetIdx] - xHatClean[targetIdx],
+    collInput, collBottleneck
+  };
+}
+
+/* ============================================================
+   Reference loss curve (same shape used across the companion pieces)
+   ============================================================ */
+const LOSS_CONTROL = [
+  [0, 1.00], [22, 0.86], [33, 0.40], [55, 0.34],
+  [66, 0.14], [85, 0.11], [100, 0.028]
+];
+function lossAt(pct){
+  for(let k=0;k<LOSS_CONTROL.length-1;k++){
+    const [x0,y0] = LOSS_CONTROL[k], [x1,y1] = LOSS_CONTROL[k+1];
+    if(pct >= x0 && pct <= x1) return lerp(y0,y1,(pct-x0)/(x1-x0));
+  }
+  return LOSS_CONTROL[LOSS_CONTROL.length-1][1];
+}
+const LOSS_X = Array.from({length:101},(_,i)=>i);
+const LOSS_Y = LOSS_X.map(lossAt);
+
+/* ============================================================
+   STATE + PLOTS
+   ============================================================ */
+const PLOT_FONT = { family:'IBM Plex Sans, sans-serif', color:'#c7d2d8', size:12 };
+const AXIS_GRID = 'rgba(255,255,255,0.08)';
+const PAPER_BG = 'rgba(0,0,0,0)';
+
+let state = { feature:0, sparsity:50, train:70, budget:30 };
+const FEATURE_LABELS = Array.from({length:N_FEATURES},(_,i)=>'F'+i);
+
+function fmt(v){ return (v>=0?'+':'') + v.toFixed(3); }
+
+function initSectionA(){
+  const r = runAttackScenario(state.train, state.sparsity, state.feature, state.budget);
+  Plotly.newPlot('reconPlot', [
+    { type:'bar', x:FEATURE_LABELS, y:r.xHatClean, name:'Clean', marker:{color:'#8fa0a8'} },
+    { type:'bar', x:FEATURE_LABELS, y:r.xHatAtkInput, name:'Attack @ input', marker:{color:'#e8544f'} },
+    { type:'bar', x:FEATURE_LABELS, y:r.xHatAtkBottleneck, name:'Attack @ bottleneck', marker:{color:'#8f7fe8'} },
+  ], {
+    height:440, autosize:true,
+    paper_bgcolor:PAPER_BG, plot_bgcolor:PAPER_BG, font:PLOT_FONT,
+    margin:{l:50,r:20,t:20,b:44},
+    barmode:'group', bargap:0.28, bargroupgap:0.12,
+    legend:{orientation:'h', y:-0.18, font:{size:11}},
+    xaxis:{title:'feature', gridcolor:AXIS_GRID, zerolinecolor:AXIS_GRID, color:'#8fa0a8'},
+    yaxis:{title:'reconstructed activation', gridcolor:AXIS_GRID, zerolinecolor:AXIS_GRID, color:'#8fa0a8'}
+  }, {displayModeBar:false, responsive:true});
+  updateStatTiles(r);
+}
+function updateSectionA(){
+  const r = runAttackScenario(state.train, state.sparsity, state.feature, state.budget);
+  Plotly.restyle('reconPlot', { y:[r.xHatClean, r.xHatAtkInput, r.xHatAtkBottleneck] }, [0,1,2]);
+  updateStatTiles(r);
+}
+function updateStatTiles(r){
+  document.getElementById('statTargetInput').textContent = fmt(r.targetDeltaInput);
+  document.getElementById('statTargetBottleneck').textContent = fmt(r.targetDeltaBottleneck);
+  document.getElementById('statCollInput').textContent = r.collInput.toFixed(3);
+  document.getElementById('statCollBottleneck').textContent = r.collBottleneck.toFixed(3);
+}
+
+const SPARSITY_SWEEP_X = Array.from({length:21},(_,i)=>i*5); // 0..100 step 5
+function sparsitySweepData(){
+  const yIn = [], yEnd = [];
+  SPARSITY_SWEEP_X.forEach(sp=>{
+    const r = runAttackScenario(state.train, sp, state.feature, state.budget);
+    yIn.push(r.targetDeltaInput);
+    yEnd.push(r.targetDeltaBottleneck);
+  });
+  return { yIn, yEnd };
+}
+function initSectionB(){
+  const { yIn, yEnd } = sparsitySweepData();
+  const rNow = runAttackScenario(state.train, state.sparsity, state.feature, state.budget);
+  Plotly.newPlot('sparsitySweepPlot', [
+    { type:'scatter', mode:'lines', x:SPARSITY_SWEEP_X, y:yIn, name:'Attack @ input', line:{color:'#e8544f', width:2.5} },
+    { type:'scatter', mode:'lines', x:SPARSITY_SWEEP_X, y:yEnd, name:'Attack @ bottleneck', line:{color:'#8f7fe8', width:2.5} },
+    { type:'scatter', mode:'markers', x:[state.sparsity], y:[rNow.targetDeltaInput], marker:{size:11,color:'#e8544f',line:{color:'#0e1418',width:1.5}}, name:'current (input)', showlegend:false },
+    { type:'scatter', mode:'markers', x:[state.sparsity], y:[rNow.targetDeltaBottleneck], marker:{size:11,color:'#8f7fe8',line:{color:'#0e1418',width:1.5}}, name:'current (bottleneck)', showlegend:false },
+  ], {
+    height:420, autosize:true,
+    paper_bgcolor:PAPER_BG, plot_bgcolor:PAPER_BG, font:PLOT_FONT,
+    margin:{l:55,r:20,t:20,b:46},
+    legend:{orientation:'h', y:-0.2, font:{size:11}},
+    xaxis:{title:'sparsity (0 = dense, 100 = highly sparse)', gridcolor:AXIS_GRID, zerolinecolor:AXIS_GRID, color:'#8fa0a8'},
+    yaxis:{title:'target-feature Δ under attack', gridcolor:AXIS_GRID, zerolinecolor:AXIS_GRID, color:'#8fa0a8'}
+  }, {displayModeBar:false, responsive:true});
+}
+function updateSectionB(){
+  const { yIn, yEnd } = sparsitySweepData();
+  const rNow = runAttackScenario(state.train, state.sparsity, state.feature, state.budget);
+  Plotly.restyle('sparsitySweepPlot', {
+    y: [yIn, yEnd, [rNow.targetDeltaInput], [rNow.targetDeltaBottleneck]],
+    x: [SPARSITY_SWEEP_X, SPARSITY_SWEEP_X, [state.sparsity], [state.sparsity]]
+  }, [0,1,2,3]);
+}
+
+const TRAIN_SWEEP_X = Array.from({length:21},(_,i)=>i*5);
+function trainSweepData(){
+  const yIn = [], yEnd = [];
+  TRAIN_SWEEP_X.forEach(tp=>{
+    const r = runAttackScenario(tp, state.sparsity, state.feature, state.budget);
+    yIn.push(r.targetDeltaInput);
+    yEnd.push(r.targetDeltaBottleneck);
+  });
+  return { yIn, yEnd };
+}
+function initSectionC(){
+  const { yIn, yEnd } = trainSweepData();
+  const rNow = runAttackScenario(state.train, state.sparsity, state.feature, state.budget);
+  Plotly.newPlot('trainSweepPlot', [
+    { type:'scatter', mode:'lines', x:TRAIN_SWEEP_X, y:yIn, name:'Attack @ input', line:{color:'#e8544f', width:2.5} },
+    { type:'scatter', mode:'lines', x:TRAIN_SWEEP_X, y:yEnd, name:'Attack @ bottleneck', line:{color:'#8f7fe8', width:2.5} },
+    { type:'scatter', mode:'markers', x:[state.train], y:[rNow.targetDeltaInput], marker:{size:11,color:'#e8544f',line:{color:'#0e1418',width:1.5}}, name:'current (input)', showlegend:false },
+    { type:'scatter', mode:'markers', x:[state.train], y:[rNow.targetDeltaBottleneck], marker:{size:11,color:'#8f7fe8',line:{color:'#0e1418',width:1.5}}, name:'current (bottleneck)', showlegend:false },
+    { type:'scatter', mode:'lines', x:LOSS_X, y:LOSS_Y, name:'reference loss', line:{color:'#57c7ba', width:2, dash:'dot'}, yaxis:'y2' },
+  ], {
+    height:420, autosize:true,
+    paper_bgcolor:PAPER_BG, plot_bgcolor:PAPER_BG, font:PLOT_FONT,
+    margin:{l:55,r:55,t:20,b:46},
+    legend:{orientation:'h', y:-0.2, font:{size:11}},
+    xaxis:{title:'training stage (%)', gridcolor:AXIS_GRID, zerolinecolor:AXIS_GRID, color:'#8fa0a8'},
+    yaxis:{title:'target-feature Δ under attack', gridcolor:AXIS_GRID, zerolinecolor:AXIS_GRID, color:'#8fa0a8'},
+    yaxis2:{title:'reference loss (log)', type:'log', overlaying:'y', side:'right', gridcolor:'rgba(0,0,0,0)', color:'#57c7ba'}
+  }, {displayModeBar:false, responsive:true});
+}
+function updateSectionC(){
+  const { yIn, yEnd } = trainSweepData();
+  const rNow = runAttackScenario(state.train, state.sparsity, state.feature, state.budget);
+  Plotly.restyle('trainSweepPlot', {
+    y: [yIn, yEnd, [rNow.targetDeltaInput], [rNow.targetDeltaBottleneck], LOSS_Y],
+    x: [TRAIN_SWEEP_X, TRAIN_SWEEP_X, [state.train], [state.train], LOSS_X]
+  }, [0,1,2,3,4]);
+}
+
+function updateAll(){
+  updateSectionA();
+  updateSectionB();
+  updateSectionC();
+}
+
+/* ============================================================
+   WIRE UP CONTROLS
+   ============================================================ */
+const featureSlider = document.getElementById('featureSlider');
+const sparsitySlider = document.getElementById('sparsitySlider');
+const trainSlider = document.getElementById('trainSlider');
+const budgetSlider = document.getElementById('budgetSlider');
+
+featureSlider.addEventListener('input', e=>{
+  state.feature = +e.target.value;
+  document.getElementById('featureVal').textContent = 'Feature ' + state.feature;
+  updateAll();
+});
+sparsitySlider.addEventListener('input', e=>{
+  state.sparsity = +e.target.value;
+  document.getElementById('sparsityVal').textContent = (state.sparsity/100).toFixed(2);
+  updateAll();
+});
+trainSlider.addEventListener('input', e=>{
+  state.train = +e.target.value;
+  document.getElementById('trainVal').textContent = (state.train/100).toFixed(2);
+  updateAll();
+});
+budgetSlider.addEventListener('input', e=>{
+  state.budget = +e.target.value;
+  document.getElementById('budgetVal').textContent = state.budget;
+  updateAll();
+});
+
+document.getElementById('featureVal').textContent = 'Feature ' + state.feature;
+document.getElementById('sparsityVal').textContent = (state.sparsity/100).toFixed(2);
+document.getElementById('trainVal').textContent = (state.train/100).toFixed(2);
+document.getElementById('budgetVal').textContent = state.budget;
+
+initSectionA();
+initSectionB();
+initSectionC();
+
+window.addEventListener('resize', ()=>{
+  ['reconPlot','sparsitySweepPlot','trainSweepPlot'].forEach(id=>{
+    Plotly.Plots.resize(document.getElementById(id));
+  });
+});
+</script>
+</body>
+</html>
